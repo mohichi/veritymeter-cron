@@ -119,9 +119,14 @@ async function runDailyUpdate(env) {
   const results = [];
 
   // メディアを順番に処理（同時並行しすぎるとレート制限にかかりやすいため直列実行）
-  for (const media of MEDIA_LIST) {
+  // さらに、各リクエストの間に間隔を空けてレート制限を回避する
+  for (let i = 0; i < MEDIA_LIST.length; i++) {
+    const media = MEDIA_LIST[i];
     const result = await fetchMediaNews(media, apiKey);
     results.push(result);
+    if (i < MEDIA_LIST.length - 1) {
+      await new Promise(resolve => setTimeout(resolve, 3000)); // 3秒待機
+    }
   }
 
   const payload = {
@@ -140,7 +145,7 @@ async function runDailyUpdate(env) {
     date: today,
     mediaCount: results.length,
     totalArticles: results.reduce((sum, r) => sum + (r.articles ? r.articles.length : 0), 0),
-    perMedia: results.map(r => ({ id: r.mediaId, articles: r.articles.length, error: r.error })),
+    perMedia: results.map(r => ({ id: r.mediaId, articles: r.articles.length, error: r.error, errorMessage: r.errorMessage || null })),
   };
 }
 
