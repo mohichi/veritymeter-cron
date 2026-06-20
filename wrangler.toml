@@ -2,10 +2,21 @@ name = "veritymeter-cron"
 main = "index.js"
 compatibility_date = "2026-06-01"
 
-# 毎朝6時（日本時間）に自動実行
-# CloudflareのcronはUTC基準のため、JST 6:00 = UTC 21:00（前日）で指定
+# 媒体ごとに8分間隔で実行（JST 6:00〜7:04の間で9媒体を順次処理）
+# CloudflareのcronはUTC基準のため、JST-9時間で指定
+# 並び順は index.js の MEDIA_LIST と完全に一致させること
 [triggers]
-crons = ["0 21 * * *"]
+crons = [
+  "0 21 * * *",   # nhk        JST 6:00
+  "8 21 * * *",   # kyodo      JST 6:08
+  "16 21 * * *",  # asahi      JST 6:16
+  "24 21 * * *",  # yomiuri    JST 6:24
+  "32 21 * * *",  # nikkei     JST 6:32
+  "40 21 * * *",  # toyokeizai JST 6:40
+  "48 21 * * *",  # reuters    JST 6:48
+  "56 21 * * *",  # bunshun    JST 6:56
+  "4 22 * * *",   # shincho    JST 7:04
+]
 
 # KVストレージのバインディング設定
 # 実際のIDは `wrangler kv namespace create NEWS_KV` 実行後に発行されるものに置き換える
