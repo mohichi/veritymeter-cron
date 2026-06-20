@@ -180,21 +180,21 @@ export default {
       );
       return new Response(
         JSON.stringify({ started: true, message: "バックグラウンドで実行を開始しました。9媒体の処理に約6〜8分かかります。/status または /last-run で結果を確認してください。" }, null, 2),
-        { status: 202, headers: { "Content-Type": "application/json" } }
+        { status: 202, headers: { "Content-Type": "application/json; charset=utf-8" } }
       );
     }
     if (url.pathname === "/last-run") {
       const data = await env.NEWS_KV.get("last_run_result");
       return new Response(data || JSON.stringify({ message: "まだ実行結果がありません" }), {
         status: 200,
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json; charset=utf-8" },
       });
     }
     if (url.pathname === "/status") {
       const data = await env.NEWS_KV.get("latest");
       return new Response(data || "No data yet", {
         status: 200,
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json; charset=utf-8" },
       });
     }
     if (url.pathname === "/envcheck") {
@@ -207,12 +207,12 @@ export default {
       });
       return new Response(JSON.stringify({ envKeys: info }, null, 2), {
         status: 200,
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json; charset=utf-8" },
       });
     }
     return new Response(
       `veritymeter-cron worker. Use /run or /status or /envcheck\nReceived pathname: "${url.pathname}"\nFull URL: "${request.url}"`,
-      { status: 200 }
+      { status: 200, headers: { "Content-Type": "text/plain; charset=utf-8" } }
     );
   },
 };
