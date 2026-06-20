@@ -71,8 +71,9 @@ JSON形式：
     });
 
     if (!apiRes.ok) {
-      console.error(`API error for ${media.id}:`, await apiRes.text());
-      return { mediaId: media.id, mediaName: media.name, articles: [], error: true };
+      const errText = await apiRes.text();
+      console.error(`API error for ${media.id}:`, errText);
+      return { mediaId: media.id, mediaName: media.name, articles: [], error: true, errorMessage: `API error (${apiRes.status}): ${errText.slice(0, 300)}` };
     }
 
     const data = await apiRes.json();
@@ -90,7 +91,7 @@ JSON形式：
       parsed = JSON.parse(candidate);
     } catch (e) {
       console.error(`Parse error for ${media.id}:`, fullText.slice(0, 500));
-      return { mediaId: media.id, mediaName: media.name, articles: [], error: true };
+      return { mediaId: media.id, mediaName: media.name, articles: [], error: true, errorMessage: `JSON解析失敗: ${fullText.slice(0, 200)}` };
     }
 
     return {
@@ -101,15 +102,17 @@ JSON形式：
     };
   } catch (e) {
     console.error(`Fetch error for ${media.id}:`, e);
-    return { mediaId: media.id, mediaName: media.name, articles: [], error: true };
+    return { mediaId: media.id, mediaName: media.name, articles: [], error: true, errorMessage: String(e) };
   }
 }
 
 async function runDailyUpdate(env) {
   const apiKey = env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    console.error("ANTHROPIC_API_KEY is not set");
-    return;
+    return { ok: false, error: "ANTHROPIC_API_KEY is not set" };
+  }
+  if (!env.NEWS_KV) {
+    return { ok: false, error: "NEWS_KV binding is not set" };
   }
 
   const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD（UTC基準）
@@ -132,7 +135,13 @@ async function runDailyUpdate(env) {
   // 日付ごとのアーカイブとしても保存（将来の履歴機能用）
   await env.NEWS_KV.put(`archive:${today}`, JSON.stringify(payload));
 
-  console.log(`Daily update completed for ${today}`);
+  return {
+    ok: true,
+    date: today,
+    mediaCount: results.length,
+    totalArticles: results.reduce((sum, r) => sum + (r.articles ? r.articles.length : 0), 0),
+    perMedia: results.map(r => ({ id: r.mediaId, articles: r.articles.length, error: r.error })),
+  };
 }
 
 export default {
@@ -146,8 +155,11 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     if (url.pathname === "/run") {
-      await runDailyUpdate(env);
-      return new Response("Daily update completed", { status: 200 });
+      const result = await runDailyUpdate(env);
+      return new Response(JSON.stringify(result, null, 2), {
+        status: result.ok ? 200 : 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
     if (url.pathname === "/status") {
       const data = await env.NEWS_KV.get("latest");
