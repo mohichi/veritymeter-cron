@@ -168,7 +168,7 @@ export default {
         headers: { "Content-Type": "application/json" },
       });
     }
-    if (url.pathname === "/debug") {
+    if (url.pathname === "/envcheck") {
       // 一時的なデバッグ用：env内に存在するキー名の一覧と、各値の有無のみを返す（値そのものは表示しない）
       const keys = Object.keys(env);
       const info = keys.map(k => {
@@ -181,6 +181,9 @@ export default {
         headers: { "Content-Type": "application/json" },
       });
     }
-    return new Response("veritymeter-cron worker. Use /run or /status", { status: 200 });
+    return new Response(
+      `veritymeter-cron worker. Use /run or /status or /envcheck\nReceived pathname: "${url.pathname}"\nFull URL: "${request.url}"`,
+      { status: 200 }
+    );
   },
 };
