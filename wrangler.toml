@@ -1,0 +1,14 @@
+name = "veritymeter-cron"
+main = "index.js"
+compatibility_date = "2026-06-01"
+
+# 毎朝6時（日本時間）に自動実行
+# CloudflareのcronはUTC基準のため、JST 6:00 = UTC 21:00（前日）で指定
+[triggers]
+crons = ["0 21 * * *"]
+
+# KVストレージのバインディング設定
+# 実際のIDは `wrangler kv namespace create NEWS_KV` 実行後に発行されるものに置き換える
+[[kv_namespaces]]
+binding = "NEWS_KV"
+id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
