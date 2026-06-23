@@ -16,7 +16,6 @@ const MEDIA_LIST = [
   { id: "yomiuri", name: "読売新聞オンライン", domain: "yomiuri.co.jp" },
   { id: "nikkei", name: "日本経済新聞", domain: "nikkei.com" },
   { id: "toyokeizai", name: "東洋経済オンライン", domain: "toyokeizai.net" },
-  { id: "reuters", name: "ロイター（日本語版）", domain: "jp.reuters.com" },
   { id: "bunshun", name: "週刊文春デジタル", domain: "bunshun.jp" },
   { id: "shincho", name: "デイリー新潮", domain: "dailyshincho.jp" },
 ];
@@ -30,9 +29,8 @@ const CRON_SCHEDULE = [
   "24 21 * * *",  // yomiuri
   "32 21 * * *",  // nikkei
   "40 21 * * *",  // toyokeizai
-  "48 21 * * *",  // reuters
-  "56 21 * * *",  // bunshun
-  "4 22 * * *",   // shincho
+  "48 21 * * *",  // bunshun
+  "56 21 * * *",  // shincho
 ];
 
 async function fetchMediaNews(media, apiKey, retryCount = 0) {
@@ -40,7 +38,7 @@ async function fetchMediaNews(media, apiKey, retryCount = 0) {
 Web検索を使って、「${media.name}」（ドメイン: ${media.domain}）が本日掲載している主要記事を調査してください。
 
 手順：
-1. "${media.domain}" のサイトで本日報じられている主要なニュース記事を、検索を使って最大5件見つける
+1. "${media.domain}" のサイトで本日報じられている主要なニュース記事を、検索を使って最大2件見つける
 2. 見つかった各記事について、タイトル・URL・簡潔な要約・信憑性スコアを判定する
 3. 必ずJSON形式のみで返答する（前置き・説明・マークダウン不要）
 
@@ -65,7 +63,7 @@ JSON形式：
 - 0-19：信憑性に重大な問題
 
 記事が見つからない、またはアクセスできない場合は {"articles": []} を返してください。
-最大5件まで、実際に確認できた記事のみを含めてください。`;
+最大2件まで、実際に確認できた記事のみを含めてください。`;
 
   try {
     const apiRes = await fetch("https://api.anthropic.com/v1/messages", {
@@ -77,7 +75,7 @@ JSON形式：
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-6",
-        max_tokens: 2000,
+        max_tokens: 1200,
         system: systemPrompt,
         messages: [
           { role: "user", content: `${media.name}（${media.domain}）の本日の主要記事を調査してください。` },
@@ -101,10 +99,19 @@ JSON形式：
       .filter((b) => b.type === "text")
       .map((b) => b.text)
       .join("\n");
-    const clean = fullText.replace(/```json|```/g, "").trim();
 
-    const matches = clean.match(/\{[\s\S]*\}/g);
-    const candidate = matches && matches.length ? matches[matches.length - 1] : clean;
+    // コードブロックのマーカーを除去
+    const clean = fullText.replace(/```json\s*/g, "").replace(/```/g, "").trim();
+
+    // {"articles":から始まるJSONを優先的に探す
+    let candidate = null;
+    const articlesMatch = clean.match(/\{\s*"articles"\s*:[\s\S]*\}/);
+    if (articlesMatch) {
+      candidate = articlesMatch[0];
+    } else {
+      const matches = clean.match(/\{[\s\S]*\}/g);
+      candidate = matches && matches.length ? matches[matches.length - 1] : clean;
+    }
 
     let parsed;
     try {
@@ -121,7 +128,7 @@ JSON形式：
     return {
       mediaId: media.id,
       mediaName: media.name,
-      articles: (parsed.articles || []).slice(0, 5),
+      articles: (parsed.articles || []).slice(0, 2),
       error: false,
     };
   } catch (e) {
