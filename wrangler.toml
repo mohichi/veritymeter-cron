@@ -15,9 +15,9 @@ crons = [
   "24 21 * * *",  # yomiuri    JST 6:24
   "32 21 * * *",  # nikkei     JST 6:32
   "40 21 * * *",  # toyokeizai JST 6:40
-  "48 21 * * *",  # reuters    JST 6:48
-  "56 21 * * *",  # bunshun    JST 6:56
-  "4 22 * * *",   # shincho    JST 7:04
+#  "48 21 * * *",  # reuters    JST 6:48
+#  "56 21 * * *",  # bunshun    JST 6:56
+#  "4 22 * * *",   # shincho    JST 7:04
 ]
 
 # KVストレージのバインディング設定
