@@ -11,7 +11,7 @@
 
 const MEDIA_LIST = [
   { id: "nhk", name: "NHKニュース", domain: "www3.nhk.or.jp" },
-  { id: "kyodo", name: "共同通信", domain: "nordot.app または kyodonews.jp" },
+  { id: "kyodo", name: "共同通信", domain: "kyodonews.jp" },
 ];
 
 // wrangler.toml の crons 配列と同じ並び順（時刻順）。
